@@ -455,3 +455,499 @@ def preprocessing():
 		_X = _preprocess(data['model_parameters'], X)
 
 		# add the preprocessed data to the notebook
+		notebook['x_preprocessed'] = _X
+		notebook['preprocessing_applied'] = data['model_parameters']['class']
+		notebook['has_columns'] = data['has_columns']
+		notebook['uploaded_file_type'] = data['uploaded_file_type']
+
+	set_notebook_data(data['notebook_name'])
+
+	return json_encoder.encode({"message": "Success", "comment": "Preprocessor applied"})
+'''
+
+@app.route("/preprocessing", methods = ["POST"])
+def preprocessing():
+
+	data = request.json
+
+	notebook = get_notebook_data(data['notebook_name'])
+
+	def _preprocess(my_json, X):
+		module = importlib.import_module('sklearn.'+my_json['module'])
+		_class = getattr(module, my_json['class'])
+		try:
+			_X = _class(**my_json['hyperparameters']).fit_transform(X)
+		except:
+			_X = _class(**my_json['hyperparameters']).fit(X)
+		return _X
+
+	X = notebook['x_raw'] if 'x_preprocessed' not in notebook else notebook['x_preprocessed']
+
+	if (data['model_parameters']['module'] in PREPROC):
+		_X = _preprocess(data['model_parameters'], X)
+		notebook['x_preprocessed'] = _X
+		notebook['preprocessing_applied'] = data['model_parameters']['class']
+		notebook['has_columns'] = data['has_columns']
+		notebook['uploaded_file_type'] = data['uploaded_file_type']
+
+	set_notebook_data(data['notebook_name'])
+
+	return json_encoder.encode({"message": "Success", "comment": "Preprocessor applied"})
+
+
+
+@app.route("/set_train_test_data", methods = ["POST"])
+def set_train_test_data():
+
+	data = request.json
+	notebook = get_notebook_data(data['notebook_name'])
+
+	# used preprocessed data if it exists, or else raw data
+	X = notebook['x_raw'] if 'x_preprocessed' not in notebook else notebook['x_preprocessed']
+
+	notebook['hyperparameters'] = {}
+	notebook['hyperparameters']['test_size'] = data['test_size']
+
+	# splits dataset into 4 parts and stores it in the notebook
+	notebook['x_train'], notebook['x_test'], notebook['y_train'], notebook['y_test'] = train_test_split(X, notebook['y_raw'], test_size = data['test_size'])
+
+	set_notebook_data(data['notebook_name'])
+
+	return json_encoder.encode({"message": "Success", "comment": "Data set"})
+
+'''
+Route functions used by build-model
+- Create neural network model
+- Select machine learning algorithm
+'''
+
+@app.route("/create_sequential_model", methods = ["POST"])
+def create_sequential_model():
+	data = request.json
+
+	notebook = get_notebook_data(data['notebook_name'])
+
+	notebook['model_type'] = "NEURAL NETWORK"
+
+	# boolean for server sent events notifier
+	notebook['_epoch_done'] = False
+
+	notebook['numLayers'] = data['numLayers']
+	layers = data['layers']
+	notebook['modelLayers'] = layers
+
+	# get input shape for the first layer
+	input_shape = notebook['x_preprocessed'].shape[1:] if 'x_preprocessed' in notebook else notebook['x_raw'].shape[1:] 
+
+	# using keras sequential API
+	model = keras.Sequential()
+
+	# use eval to evaluate strings received by client (in JSON format) to create layers
+	# add these layers to the model
+
+	# special case to include input shape
+	model.add(eval("keras.layers."+layers[1]['layerType']+"("+ ",".join([str(dct["name"])+"="+(str(dct["defaultValue"]) if str_isfloat(dct["defaultValue"]) else "'"+dct["defaultValue"]+"'") for dct in layers[1]['defaultOptions'] if dct["defaultValue"] not in {True, False, None}] + ["input_shape="+str(input_shape)]) +")"))
+	
+	for layer in layers[2:]:
+		model.add(eval("keras.layers."+layer['layerType']+"("+ ",".join([str(dct["name"])+"="+(str(dct["defaultValue"]) if str_isfloat(dct["defaultValue"]) else "'"+dct["defaultValue"]+"'") for dct in layer['defaultOptions'] if dct["defaultValue"] not in {True, False, None}]) +")"))
+
+	model.summary()
+
+	# store model in json format
+	notebook['model'] = model.to_json()
+	set_notebook_data(notebook['notebook_name'])
+	
+	# clear the graph to avoid errors
+	try:
+		keras.backend.clear_session()
+	except:
+		pass
+
+	return json_encoder.encode({"message": "Success", "comment": "Model Created!"})
+
+'''
+Route functions used by train-model
+- Specify hyperparameters
+- Train learning models
+- Send events to display accuracy and loss history curves
+'''
+
+@app.route("/create_non_neural_network_model", methods = ["POST"])
+def create_non_neural_network_model():
+
+	data = request.json
+
+	notebook = get_notebook_data(data['notebook_name'])
+
+	notebook['hyperparameters'] = data['model_parameters']
+	notebook['model_type'] = "NON NEURAL NETWORK"
+	notebook['model_name'] = data['model_parameters']['class']
+
+	# change the data types of parameters to required data types
+	for key in data['model_parameters']['hyperparameters']:
+		try:
+			if(data['model_parameters']['hyperparameters'][key]=='None'):
+				data['model_parameters']['hyperparameters'][key]=None
+			elif(data['model_parameters']['hyperparameters'][key].isdigit()):
+				data['model_parameters']['hyperparameters'][key] = int(data['model_parameters']['hyperparameters'][key])
+			elif(str_isfloat(data['model_parameters']['hyperparameters'][key])):
+				data['model_parameters']['hyperparameters'][key] = float(data['model_parameters']['hyperparameters'][key])
+			elif(data['model_parameters']['hyperparameters'][key]=='True'):
+				data['model_parameters']['hyperparameters'][key] = True
+			elif(data['model_parameters']['hyperparameters'][key]=='False'):
+				data['model_parameters']['hyperparameters'][key] = False
+		except:
+			pass
+
+	# allocate CPUs if possible
+	if 'n_jobs' in 	data['model_parameters']['hyperparameters']:
+		data['model_parameters']['hyperparameters']['n_jobs'] = notebook['CPU_count']
+
+	notebook['is_online'] = True
+
+	def train_supervised(x_train, y_train, my_json):
+
+		# import just the required class from specific module and train the model
+
+		module = importlib.import_module('sklearn.'+my_json['module'])
+		_class = getattr(module, my_json['class'])
+		model = _class(**my_json['hyperparameters'])
+		model.fit(x_train, y_train)
+	
+		# deallocate devices after training
+
+		notebook['is_online'] = False
+
+		return model
+
+	def train_unsupervised(X, my_json):
+
+		# import just the required class from specific module and train the model
+
+		module = importlib.import_module('sklearn.'+my_json['module'])
+		_class = getattr(module, my_json['class'])
+		model = _class(**my_json['hyperparameters'])
+		
+		try:
+			model.fit_transform(X)
+		except:
+			model.fit(X)
+		
+		# deallocate devices after training
+
+		notebook['is_online'] = False
+
+		return model 
+
+	# train supervised and unsupervised algorithms separately
+
+	# supervised algorithms require 1-D array of Y training samples which contain class labels
+	if data['model_parameters']['module'] in SUPER:
+		print("\n", numpy.array(list(map(numpy.argmax, notebook['y_train']))), "\n")
+		y_train = notebook['y_train'] if len(notebook['y_train'].shape) <= 2 else numpy.array(list(map(numpy.argmax, notebook['y_train']))) 
+		notebook['model'] = train_supervised(notebook['x_train'], y_train, data['model_parameters'])
+	
+	# unsupervised algorithms require on X training samples
+	elif data['model_parameters']['module'] in UNSUPER:
+		notebook['model'] = train_supervised(notebook['x_train'], data['model_parameters'])
+
+	set_notebook_data(data['notebook_name'])
+
+	return json_encoder.encode({"message": "Success", "comment": "Model trained"})
+
+@app.route("/compile_sequential_model", methods = ["POST"])
+def compile_sequential_model():
+	# Compiles and Trains neural network	
+
+	data = request.json
+
+	notebook = get_notebook_data(data['notebook_name'])
+	notebook['hyperparameters'] = data['hyperparameters']
+	notebook["history"] = 	{
+								"acc": [],
+								"val_acc": [],
+								"loss": [],
+								"val_loss": []
+							}
+
+	# allocate specified device while creating notebook
+							
+	config = tensorflow.ConfigProto()
+	config.gpu_options.allow_growth = True
+	config.gpu_options.per_process_gpu_memory_fraction = (notebook["GPU_count"] / len(GPUtil.getAvailable()))
+	keras.backend.tensorflow_backend.set_session(tensorflow.Session(config = config))
+
+	notebook['is_online'] = True
+
+	# load created model
+	model = keras.models.model_from_json(notebook['model'])
+	
+	# compile with client-sent hyperparamters
+	model.compile(loss = data['hyperparameters']['loss'], optimizer = keras.optimizers.SGD(lr = float(data['hyperparameters']['learning_rate']), momentum = float(data['hyperparameters']['momentum']), nesterov = bool(data['hyperparameters']['nesterov'])), metrics = ['acc'])
+	
+	# Training starts
+	model.fit(x = notebook['x_train'], y = notebook['y_train'], batch_size = 128, validation_data = (notebook['x_test'], notebook['y_test']), epochs = int(data['hyperparameters']['epochs']),  callbacks = [on_epoch_end_callback(notebook = notebook)])
+
+	# save model separately as model weights could not be pickled	
+	model.save("NOTEBOOK_" + data['notebook_name'] + "_neural_network_model.hdf5")
+
+	notebook['model'] = model.to_json()
+	set_notebook_data(data['notebook_name'])
+	
+	try:
+		keras.backend.clear_session()
+	except:
+		pass
+
+	return json_encoder.encode({"message": "Success", "comment": "Compiled model and trained"})
+
+@app.route("/get_epoch_details/<notebook_name_json>", methods = ["GET"])
+def get_epoch_details(notebook_name_json):
+	
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+	notebook = get_notebook_data(notebook_name_dict['notebook_name'])
+
+	# Yield the events of epoch ending
+	def epoch_done_streamer():
+		
+		# Busy wait - can be improved
+		while True:
+			if notebook['_epoch_done']:
+				
+				# reset the epoch done notifier; continue to wait busily
+				notebook['_epoch_done'] = False
+
+				# send just a signal to reload the image created, therefore data = 0
+				yield 'event: EPOCH_END\ndata: 0\n\n'
+	
+	# return Server sent events	
+	return Response(epoch_done_streamer(), mimetype="text/event-stream")
+
+'''
+Route functions used results
+- Displays accuracy, precision, recall, true positive, true negative, false positive, false negative
+- Plots ROC and Precision-Recall Curves
+'''
+
+@app.route("/get_roc_curve/<notebook_name_json>", methods = ["GET"])
+def get_roc_curve(notebook_name_json):
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+
+	notebook = get_notebook_data(notebook_name_dict['notebook_name'])
+
+	# does predict on testing data
+
+	# to invoke keras predict
+	if notebook['model_type'] == "NEURAL NETWORK":
+		model = keras.models.load_model("NOTEBOOK_" + notebook_name_dict['notebook_name'] + "_neural_network_model.hdf5")
+		probs = model.predict(notebook['x_test'])
+	
+	# to invoke sklearn predict
+	else:	
+		probs = notebook['model'].predict_proba(notebook['x_test'])
+
+	preds = probs[:, 1]
+	fpr, tpr, threshold = roc_curve(notebook['y_test'], preds)
+	roc_auc = auc(fpr, tpr)
+
+	# Create ROC plot
+	plt.title('Receiver Operating Characteristic')
+	plt.plot(fpr, tpr, 'b', label = 'AUC = %0.2f' % roc_auc)
+	plt.legend(loc = 'lower right')
+	plt.plot([0, 1], [0, 1],'r--')
+	plt.xlim([0, 1])
+	plt.ylim([0, 1])
+	plt.ylabel('True Positive Rate')
+	plt.xlabel('False Positive Rate')
+
+	# Save plot to be used by vue.js
+	filename = "NOTEBOOK_" + notebook['notebook_name'] + "_roc_curve.jpg"
+	plt.savefig("../UI/src/assets/" + filename)
+
+	plt.clf()
+
+	# Save file name in notebook
+	notebook['roc_curve'] = filename
+
+	set_notebook_data(notebook_name_dict['notebook_name'])
+
+	try:
+		keras.backend.clear_session()
+	except:
+		pass
+
+	return json_encoder.encode({"message": "Success", "roc_curve": filename})
+
+@app.route("/get_accuracy/<notebook_name_json>", methods = ["GET"])
+def get_accuracy(notebook_name_json):
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+
+	notebook = get_notebook_data(notebook_name_dict['notebook_name'])
+
+	# to invoke keras predict
+	if notebook['model_type'] == "NEURAL NETWORK":
+		model = keras.models.load_model("NOTEBOOK_" + notebook_name_dict['notebook_name'] + "_neural_network_model.hdf5")
+		prediction = model.predict(notebook['x_test'])
+		prediction = numpy.array(list(map(numpy.argmax, prediction)))
+	
+	# to invoke sklearn predict
+	else:
+		model = notebook['model']
+		prediction = model.predict(notebook['x_test'])
+
+	# de-"one hot"
+	y_test = notebook['y_test']
+	if len(y_test.shape) > 1:
+		y_test = numpy.array(list(map(numpy.argmax, y_test)))
+	
+	accuracy = accuracy_score(notebook['y_test'], prediction)
+
+	# save accuracy in notebook
+	notebook['accuracy'] = accuracy
+
+	set_notebook_data(notebook_name_dict['notebook_name'])
+	
+	try:
+		keras.backend.clear_session()
+	except:
+		pass
+
+	return json_encoder.encode({"message": "Success", "accuracy": str(accuracy)})
+
+@app.route("/get_confusion_matrix/<notebook_name_json>", methods = ["GET"])
+def get_confusion_matrix(notebook_name_json):
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+
+	notebook = get_notebook_data(notebook_name_dict['notebook_name'])
+
+	# to invoke keras predict
+	if notebook['model_type'] == "NEURAL NETWORK":
+		model = keras.models.load_model("NOTEBOOK_" + notebook_name_dict['notebook_name'] + "_neural_network_model.hdf5")
+		prediction = model.predict(notebook['x_test'])
+		prediction = numpy.array(list(map(numpy.argmax, prediction)))
+	
+	# to invoke sklearn predict
+	else:
+		model = notebook['model']
+		prediction = model.predict(notebook['x_test'])
+
+	# de-"one hot"
+	y_test = notebook['y_test']
+	if len(y_test.shape) > 1:
+		y_test = numpy.array(list(map(numpy.argmax, y_test)))
+
+	matrix = confusion_matrix(notebook['y_test'], prediction).ravel()
+
+	# save confusion matrix in notebook
+	# did not consider for multiclass labels while displaying
+	notebook['confusion_matrix'] = matrix
+	notebook['true_negative'] = int(matrix[0])
+	notebook['false_positive'] = int(matrix[1])
+	notebook['false_negative'] = int(matrix[2])
+	notebook['true_positive'] = int(matrix[3])
+
+	set_notebook_data(notebook_name_dict['notebook_name'])
+	
+	try:
+		keras.backend.clear_session()
+	except:
+		pass
+
+	return json_encoder.encode({"message": "Success", "confusion_matrix": matrix.tolist()})
+
+@app.route("/get_precision_recall_curve/<notebook_name_json>", methods = ["GET"])
+def get_precision_recall_curve(notebook_name_json):
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+
+	notebook = get_notebook_data(notebook_name_dict['notebook_name'])
+
+
+	# to invoke sklearn predict
+	if notebook['model_type'] == "NEURAL NETWORK":
+		model = keras.models.load_model("NOTEBOOK_" + notebook_name_dict['notebook_name'] + "_neural_network_model.hdf5")
+		prediction = model.predict(notebook['x_test'])
+		prediction = numpy.array(list(map(numpy.argmax, prediction)))
+	
+	# to invoke sklearn predict
+	else:
+		model = notebook['model']
+		prediction = model.predict(notebook['x_test'])
+
+	y_score = prediction
+
+	# de-"one hot"
+	y_test = notebook['y_test']
+	if len(y_test.shape) > 1:
+		y_test = numpy.array(list(map(numpy.argmax, y_test)))
+
+	# Average precision curve for only binary class problems
+	# can iterate for multi class
+	y_test[y_test == y_test.min()] = 0
+	y_test[y_test != 0] = 1
+
+	average_precision = average_precision_score(y_test, y_score)
+
+	notebook['average_precision_score'] = average_precision
+	precision, recall, _ = precision_recall_curve(y_test, y_score)
+
+	# create precision recall curve
+	plt.step(recall, precision, color='b', alpha = 0.2, where = 'post')
+	plt.fill_between(recall, precision, step = 'post', alpha = 0.2,color = 'b')
+	plt.xlabel('Recall')
+	plt.ylabel('Precision')
+	plt.ylim([0.0, 1.05])
+	plt.xlim([0.0, 1.0])
+	plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(average_precision))
+
+	# save data and filename in the notebook for reloading
+	filename = "NOTEBOOK_" + notebook['notebook_name'] + "_precision_recall_curve.jpg"
+	plt.savefig("../UI/src/assets/" + filename)
+	plt.clf()
+	notebook['precision_recall_curve'] = filename
+	notebook['average_precision_score'] = average_precision
+	notebook['recall'] = recall.mean()
+
+	set_notebook_data(notebook_name_dict['notebook_name'])
+
+	try:
+		keras.backend.clear_session()
+	except:
+		pass
+
+	return json_encoder.encode({"message": "Success", "precision_recall_curve": filename, "average_precision_score": average_precision, "recall": recall.mean()})
+
+
+'''
+Route functions used investigate-model
+- Displays LIME generated plots
+'''
+
+@app.route("/investigate_model/<notebook_name_json>", methods = ["GET"])
+def investigate_model(notebook_name_json):
+
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+	notebook = get_notebook_data(notebook_name_dict['notebook_name'])
+
+	def predict_fn(instance):
+		if notebook['model_type'] == "NEURAL NETWORK":
+			return keras.models.model_from_json(notebook['model']).predict([instance])
+		try:
+			return notebook['model'].predict_proba(instance)
+		except:
+			return notebook['model'].predict(instance)
+
+	def explain_instance_image_data(instance):
+
+		newshape = numpy.prod(instance.shape)
+
+		if notebook['model_type'] == "NEURAL NETWORK":
+			model = keras.models.load_model("NOTEBOOK_" + notebook_name_dict['notebook_name'] + "_neural_network_model.hdf5")
+			target = list(map(numpy.argmax, model.predict(numpy.reshape(instance, newshape = (1, *instance.shape)))[0]))[0]
+		else:
+			target = notebook['model'].predict(numpy.reshape(instance, newshape = newshape))
+
+		plt.savefig("../UI/src/assets/" + "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance0.jpg")
+		plt.clf()
+
+		explainer = lt.LimeTabularExplainer(training_data=notebook['x_train'], feature_names=[str(i) for i in range(len(instance))] if 'column_names' not in notebook else notebook['column_names'])
+		exp = explainer.explain_instance(instance, predict_fn, num_features=len(instance), num_samples=newshape, labels=(target,))
