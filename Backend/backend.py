@@ -951,3 +951,85 @@ def investigate_model(notebook_name_json):
 
 		explainer = lt.LimeTabularExplainer(training_data=notebook['x_train'], feature_names=[str(i) for i in range(len(instance))] if 'column_names' not in notebook else notebook['column_names'])
 		exp = explainer.explain_instance(instance, predict_fn, num_features=len(instance), num_samples=newshape, labels=(target,))
+		exp.as_pyplot_figure(label=target).savefig("../UI/src/assets/" + "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance1.jpg", figsize=(50, 50))
+		exp.save_to_file(file_path="../UI/src/assets/" + "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance.html")
+		
+		explaination_list = exp.as_map()[target]
+		constructed_image = numpy.zeros(shape=len(explaination_list))
+
+		for i, j in explaination_list:
+			constructed_image[i] = 0.5 + j/2
+
+		constructed_image = numpy.reshape(constructed_image, newshape = instance.shape)
+		plt.savefig("../UI/src/assets/" + "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance2.jpg")
+		plt.clf()
+		notebook['explanation'] = "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance.html"
+		set_notebook_data(notebook_name_dict['notebook_name'])
+		
+		try:
+			keras.backend.clear_session()
+		except:
+			pass
+
+		return json_encoder.encode({'instance': "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance0.jpg", 'explanation': "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance.html", 'constructed': "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance2.jpg"})
+
+	def explain_instance_tabular_data(instance):
+		newshape = numpy.prod(instance.shape)
+		
+		if notebook['model_type'] == "NEURAL NETWORK":
+			model = keras.models.load_model("NOTEBOOK_" + notebook_name_dict['notebook_name'] + "_neural_network_model.hdf5")
+			target = list(map(numpy.argmax, model.predict(numpy.reshape(instance, newshape = (1, *instance.shape)))[0]))[0]
+		else:
+			target = notebook['model'].predict([instance])[0]
+
+
+		explainer = lt.LimeTabularExplainer(training_data=notebook['x_train'], feature_names=[str(i) for i in range(len(instance))])
+		exp = explainer.explain_instance(instance, predict_fn, num_features=len(instance), num_samples=min(len(notebook['x_train']), 100), labels=(target,))
+		exp.as_pyplot_figure(label=target).savefig("../UI/src/assets/" + "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance1.jpg", figsize=(50, 50))
+		exp.save_to_file(file_path="../UI/src/assets/" + "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance.html")
+		notebook['explanation'] = "NOTEBOOK_"+notebook['notebook_name']+"_investigate_model_instance.html"
+		
+		set_notebook_data(notebook_name_dict['notebook_name'])
+		
+		try:
+			keras.backend.clear_session()
+		except:
+			pass
+
+		return json_encoder.encode({'explanation': "NOTEBOOK_" + notebook['notebook_name'] + "_investigate_model_instance.html"})
+
+
+	is_image = len(notebook['x_test'][0].shape) >= 2
+
+	if is_image :
+		return explain_instance_image_data(notebook['x_train'][numpy.random.randint(0,len(notebook['x_test']-1))])
+	else:
+		return explain_instance_tabular_data(notebook['x_train'][numpy.random.randint(0,len(notebook['x_test']-1))])
+
+'''
+To create PDFs
+'''
+
+@app.route("/export_pdf/<notebook_name_json>", methods = ["GET"])
+def export_pdf(notebook_name_json):
+	notebook_name_dict = json_decoder.decode(notebook_name_json)
+
+	url = ["/upload-data", "/build-model", "/train-model", "/results", "/investigate-model"]
+	merger = PdfFileMerger()
+	
+	# go over the 5 pages of the notebook and save them as pdfs using google-chrome invoked through shell.
+	# will not work on windows
+	for i in range(5):
+		os.system("google-chrome --headless --disable-gpu --print-to-pdf=\"" +notebook_name_dict['notebook_name'] + 'out' + str(i) + '.pdf'+ "\" http://localhost:8080/notebook/" + notebook_name_dict['notebook_name'] + url[i])
+	
+	# merge the pdfs while deleting them
+	for i in range(5):
+		merger.append(open(notebook_name_dict['notebook_name'] + 'out' + str(i) + '.pdf', 'rb'))
+		remove(notebook_name_dict['notebook_name'] + 'out' + str(i) + '.pdf')
+
+	# save the merged pdf
+	with open(notebook_name_dict['notebook_name'] + '_report.pdf', 'wb') as fp:
+		merger.write(fp)
+
+	# return PDF type data, to open on the browser
+	return Response(open(notebook_name_dict['notebook_name'] + '_report.pdf', 'rb').read(), mimetype="application/pdf")	
