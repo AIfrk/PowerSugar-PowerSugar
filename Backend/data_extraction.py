@@ -19,4 +19,23 @@ class CSV:
 		# For excel files without headings
 
 		elif self.filename[-5:] == '.xlsx' :
-			df = pd.r
+			df = pd.read_excel(self.filename, header=None)
+
+		# For tab separated values with headings
+		
+		elif self.filename[-4:] == '.tsv' and self.has_columns :
+			df = pd.read_csv(self.filename, sep='\t')
+
+		# For tab separated values without headings
+		
+		elif self.filename[-4:] == '.tsv' :
+			df = pd.read_csv(self.filename, sep='\t', header=None)
+
+		# For comma separated values with headings
+
+		elif self.filename[-4:] == '.csv' and self.has_columns:
+			df = pd.read_csv(self.filename)
+
+		# For comma separated values without headings
+
+		elif self.fil
