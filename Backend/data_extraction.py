@@ -38,4 +38,24 @@ class CSV:
 
 		# For comma separated values without headings
 
-		elif self.fil
+		elif self.filename[-4:] == '.csv' :
+			df = pd.read_csv(self.filename, header=None)
+
+		# Catch errors in data format
+
+		else:
+			print("Error reading file")
+			return None, None
+
+		return self._split(df)
+
+	def _split(self, df):
+
+		X = np.array([np.array(df[col]) for col in self.column_json['features']])
+		Y = np.array([np.array(df[col]) for col in self.column_json['labels']])
+		return np.transpose(X), np.transpose(Y)
+
+class RawFile:
+
+	def __init__(self, filename):
+		self.filename = filename
