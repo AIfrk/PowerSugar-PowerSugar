@@ -28,3 +28,15 @@ json_encoder = json.JSONEncoder()
 # Used to create weak references to dictionary
 
 class weakdict(dict):
+	pass
+
+# Check if string in JSON object is float
+# there is no str.isfloat
+
+def str_isfloat(s):
+	try:
+		float(s)
+		return True
+	except:
+		return False
+
