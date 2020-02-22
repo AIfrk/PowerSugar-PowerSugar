@@ -59,3 +59,17 @@ class RawFile:
 
 	def __init__(self, filename):
 		self.filename = filename
+
+	def extract():
+
+		# For numpy array files
+
+		if self.filename[-4:] == '.npz':
+			data = np.load(self.filename)
+			return data[0], data[1]
+
+		# For pickled files
+
+		elif self.filename[-4:] == '.pickle':
+			data = pickle.load(self.filename)
+			return data[0], data[1]
