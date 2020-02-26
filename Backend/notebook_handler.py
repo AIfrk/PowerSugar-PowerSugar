@@ -31,4 +31,23 @@ def get_notebook_data(notebook_name):
 		fileObject = open("NOTEBOOK_" + notebook_name, "ab+")
 		
 		# pickle needs the file pointer to point to starting of the file
-		fileObject
+		fileObject.seek(0)
+
+		notebook = pickle.load(fileObject)
+
+		# create a reference of the notebook in ACTIVE_NOTEBOOKS
+		proxy_notebook = weakref.proxy(notebook)
+
+		# add data required to the ACTIVE_NOTEBOOKS
+		ACTIVE_NOTEBOOKS[notebook_name] = {'data':notebook, 'file':fileObject}
+		
+		return proxy_notebook
+	
+	# if already present and open
+	else:
+
+		# return just the reference to the data
+		return weakref.proxy(ACTIVE_NOTEBOOKS[notebook_name]['data'])
+
+
+# Takes the notebook name and dump everything to the noteboo
