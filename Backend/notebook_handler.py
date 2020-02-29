@@ -50,4 +50,18 @@ def get_notebook_data(notebook_name):
 		return weakref.proxy(ACTIVE_NOTEBOOKS[notebook_name]['data'])
 
 
-# Takes the notebook name and dump everything to the noteboo
+# Takes the notebook name and dump everything to the notebook file
+
+def set_notebook_data(notebook_name):
+
+	# notebook should be opened.
+	if notebook_name in ACTIVE_NOTEBOOKS:
+
+		fileObject = ACTIVE_NOTEBOOKS[notebook_name]['file']
+
+		# could delete data present in the notebook file
+		fileObject.seek(0)
+		fileObject.truncate(0)
+		
+		# dump the notebook data
+		pickle.dump(ACTIVE_NOTEBOOKS[notebook_name]['data'], fileObject)
