@@ -270,3 +270,13 @@ div.content {
   .sidebar_dashboard a {float: left;}
   div.content {margin-left: 0;}
 }
+
+/* On screens that are less than 400px, display the bar vertically, instead of horizontally */
+@media screen and (max-width: 400px) {
+  .sidebar_dashboard a {
+    text-align: center;
+    float: none;
+  }
+}
+
+</style>
