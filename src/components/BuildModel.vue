@@ -470,3 +470,168 @@
       },
       // Deletes layer based on layer ID
       deleteLayer(layerType,layer_id){
+
+        for(let i=0;i<this.modelLayers.length;i++)
+        {
+            if(this.modelLayers[i]['id']==layer_id)
+              this.modelLayers.splice(i,1)
+        }
+          
+        console.log("After delete, model layers:",this.modelLayers)
+        
+        this.rightSidebarSelectedLayer = '';
+        this.modelLayers.splice(layer_id, 1);
+        
+        console.log("deleting layer id",layer_id)
+
+        },
+      // Updates hyperparameters on right sidebar based on layerID
+      updatedSelectedLayer(layer_id){
+        this.rightSidebarSelectedLayer = layer_id;
+      },
+      // Sends model to backend
+      sendModelToBackend(){
+        console.log(JSON.stringify(this.modelLayers))
+        this.toSend = {notebook_name: this.$route.params.notebook_name, layers: this.modelLayers,numLayers:this.layers}
+        this.$http.post('http://localhost:5000/create_sequential_model', JSON.stringify(this.toSend), { headers: { 'Content-Type': 'application/json' } }).then((response) => {
+          
+          console.log("Create sequential model",response)
+        })
+
+      }
+
+    }
+
+  }
+
+</script>
+
+<style>
+
+  .inputOutputLayer{
+    margin: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-right: 70px;
+    padding-left: 70px;
+  }
+
+  .deleteLayerOption{
+    color: crimson;
+  }
+
+  .deleteLayerOption:hover{
+    color: brown;
+
+  }
+
+  .drop.over{
+    background: #ccc;
+  }
+
+  .dropArea{
+    height: 650px;
+
+  }
+
+  .leftSidebarOptions{
+  margin: 7px;
+  padding: 5px;
+  border: 1px solid rgb(222, 224, 229);
+  }
+  /* Default font of entire app */
+  #build-model{
+    font-family: 'Raleway', sans-serif;
+  }
+
+  /* Border of header */
+  .header{
+    border-bottom: 1px solid rgb(222, 224, 229);
+  }
+
+
+  /* START - STYLING FOR SIDEBAR */
+
+  .left_sidebar {
+    margin-top: 40px;
+    margin-left: 55px;
+    padding: 0;
+    width: 260px;
+    background-color: #f1f1f1;
+    position: fixed;
+    height: 70%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border: 1px solid rgb(222, 224, 229);
+
+  }
+
+  /* Sidebar links */
+  .left_sidebar a {
+    display: block;
+    color: black;
+    padding: 10px;
+    text-decoration: none;
+  }
+
+  /* Active/current link */
+  .left_sidebar a.active {
+    background-color: #4CAF50;
+    color: white;
+  }
+
+  /* Links on mouse-over */
+  .left_sidebar a:hover:not(.active) {
+    background-color: #555;
+    color: white;
+  }
+
+   /*Page content. The value of the margin-left property should match the value of the sidebar width property*/
+  .build_model_body{
+    /*margin-left: 340px;*/
+    padding: 1px 16px;
+    height: 650px;
+    margin-right: 200px;
+  }
+
+  /* On screens that are less than 700px wide, make the sidebar into a topbar */
+  @media screen and (max-width: 700px) {
+    .left_sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      margin-left: 0px;
+    }
+    .left_sidebar a {float: left;}
+    div.content {margin-left: 0;}
+
+    .build_model_body{
+      position: relative;
+      margin: 0px;
+    }
+
+  }
+
+  /* On screens that are less than 400px, display the bar vertically, instead of horizontally */
+  @media screen and (max-width: 400px) {
+    .left_sidebar a {
+      text-align: center;
+      float: none;
+    }
+
+    .left_sidebar{
+      position: relative;
+      margin-left: 0px;
+
+    }
+
+    .build_model_body{
+      position: relative;
+      margin: 0px;
+    }
+
+  }
+
+  /* END - STYLING FOR SIDEBAR */
+
+</style>
