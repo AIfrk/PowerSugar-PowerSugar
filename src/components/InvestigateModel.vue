@@ -28,4 +28,15 @@ export default {
   },
   methods: {
       // Called on body load
-      // Checks if notebook exists and populates UI if noteb
+      // Checks if notebook exists and populates UI if notebook exists
+     loadNotebook(){
+
+          console.log("Loading notebook!")
+              
+          this.$http.post('http://localhost:5000/load_existing_notebook',JSON.stringify({notebook_name:this.$route.params.notebook_name}), { headers: {  'Content-Type': 'application/json' } }).then((response) => {
+
+          console.log("Loads exisitng notebook",response.data)
+          
+          let notebook_data = response.data["notebook_data"]
+          if('explanation' in notebook_data)
+     
