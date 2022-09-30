@@ -39,4 +39,19 @@ export default {
           
           let notebook_data = response.data["notebook_data"]
           if('explanation' in notebook_data)
+          {
+            console.log("Loading explanation")
+            this.explanation_embed = "/src/assets/" + notebook_data['explanation']
+
+          }
+
+              
+        })
+      },
+    // Loads investigate model image 
+    investigate_model: function() {
+      let final_obj = {
+          notebook_name: this.$route.params.notebook_name,
+        }
+      this.$http.get('http://localhost:5000/investigate_model/' + JSON.stringify(final_obj)).then((response) => {
      
