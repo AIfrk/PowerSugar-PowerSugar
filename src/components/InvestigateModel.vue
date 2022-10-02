@@ -54,4 +54,20 @@ export default {
           notebook_name: this.$route.params.notebook_name,
         }
       this.$http.get('http://localhost:5000/investigate_model/' + JSON.stringify(final_obj)).then((response) => {
-     
+        console.log(response.data)
+        this.explanation_embed = "/src/assets/" + response.data['explanation']
+      })
+    }
+  }
+}
+</script>
+
+<style>
+.explanation_embed
+{
+  position: relative;
+  width: 500%;
+  height: 500%;
+}
+
+</style>
