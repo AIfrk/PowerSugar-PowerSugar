@@ -21,4 +21,16 @@
                         label="Upload own dataset/existing:"
                         label-class="text-sm-right"
                         label-for="nestedDataType">
-            <b-form-s
+            <b-form-select  id="nestedDataType" v-model="uploadedFileType" :options="UploadedFileOptions" class="mb-3" />
+          </b-form-group>
+        </b-form-group>
+
+        <!--Rendering content for pre-defined datasets-->
+        <div v-if="uploadedFileType=='pre-defined'">
+       
+       <b-form-group horizontal
+                        breakpoint="lg"
+                        label=""
+                        label-size="lg"
+                        label-class="font-weight-bold pt-0"
+      
