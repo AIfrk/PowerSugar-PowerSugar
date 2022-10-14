@@ -241,3 +241,82 @@
             });
           }
 
+
+        }
+        console.log(this.form_structure,this.form_data);
+      },
+      // Sends model hyperparameters to backend
+      send_parameters: function(){
+        
+        let model_parameters_obj = {
+
+          module: this.module,
+          class: this.class,
+          hyperparameters: this.form_data
+        }
+
+        let final_obj = {
+          notebook_name: this.$route.params.notebook_name,
+          model_parameters : model_parameters_obj
+        }
+
+        // Set train test data
+        let obj = {test_size:0.3,notebook_name: this.$route.params.notebook_name}
+
+        this.$http.post('http://localhost:5000/set_train_test_data',JSON.stringify(obj), { headers: { 'Content-Type': 'application/json' } }).then((response) => { 
+                console.log("set_train_test_data",response.data);
+              })
+
+        //Build non-neural model
+        if (this.modelType == "NNN")
+        {
+        this.$http.post('http://localhost:5000/create_non_neural_network_model',JSON.stringify(final_obj), { headers: { 'Content-Type': 'application/json' } }).then((response) => { 
+                console.log("create_non_neural_network_model",response.data);
+
+                if(response.data["message"]=="Success")
+                {
+                  alert("Model trained!")
+                }
+          })
+        }
+        else
+        {
+          let final_obj = {
+            notebook_name: this.$route.params.notebook_name,
+            hyperparameters : this.form_data
+          }
+          console.log(final_obj)
+          this.$http.post('http://localhost:5000/compile_sequential_model',JSON.stringify(final_obj), { headers: { 'Content-Type': 'application/json' } }).then((response) => { 
+                console.log("compile_neural_network_model",response.data);
+
+                if(response.data["message"]=="Success"){
+           			alert("Model has been compiled and trained")
+                }
+
+              
+              })
+
+          // Fetches epoch details
+          let notebook_name = {notebook_name: this.$route.params.notebook_name}
+          let eventSource = new EventSource("http://localhost:5000/get_epoch_details/"+JSON.stringify(notebook_name))
+          
+          eventSource.addEventListener('EPOCH_END', event => {
+          	console.log("RECEIVED EVENT EPOCH_END")
+          	this.accuracy_history_curve = "/src/assets/" + "NOTEBOOK_" + this.$route.params.notebook_name + "_accuracy_history_curve.jpg" + "?" + Math.random()
+          	this.loss_history_curve = "/src/assets/" + "NOTEBOOK_" + this.$route.params.notebook_name + "_loss_history_curve.jpg" + "?" +  Math.random()
+          })
+          
+        }         
+      }
+    },
+    beforeMount(){
+      this.parse_json();
+    }
+
+  }
+</script>
+
+<style>
+
+
+</style>
