@@ -11,4 +11,14 @@
         <br>
         <br>
         <br>
-        <b-form-g
+        <b-form-group horizontal
+                      breakpoint="lg"
+                      label="Data-preprocessing"
+                      label-size="lg"
+                      label-class="font-weight-bold pt-0"
+                      class="mb-0">
+          <b-form-group horizontal
+                        label="Upload own dataset/existing:"
+                        label-class="text-sm-right"
+                        label-for="nestedDataType">
+            <b-form-s
