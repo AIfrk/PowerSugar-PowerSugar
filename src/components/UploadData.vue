@@ -47,4 +47,18 @@
           </b-form-group>
           <br>
           <br>
-      
+          <b-button type="primary" @click='handlePreDefined()'> Choose Dataset</b-button>
+
+        </div>
+        <br>
+        <div v-if="uploadedFileType=='csv'">
+          <b-form-group horizontal
+                        breakpoint="lg"
+                        label=""
+                        label-size="lg"
+                        label-class="font-weight-bold pt-0"
+                        class="mb-0">
+
+             <b-form-group horizontal
+                          label="Does dataset contain columns?"
+                   
