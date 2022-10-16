@@ -33,4 +33,18 @@
                         label=""
                         label-size="lg"
                         label-class="font-weight-bold pt-0"
+                        class="mb-0">
+
+           <b-form-group horizontal
+                          label="Select options:"
+                          label-class="text-sm-right"
+                          label-for="pre-proc-options">
+              <b-form-select :options="preDefinedOptions" id="pre-def-options" v-model="predefinedSelected" :select-size="1"></b-form-select>
+            </b-form-group>
+            
+          </b-form-group>
+
+          </b-form-group>
+          <br>
+          <br>
       
