@@ -61,4 +61,19 @@
 
              <b-form-group horizontal
                           label="Does dataset contain columns?"
-                   
+                          label-class="text-sm-right"
+                          label-for="contains-cols">
+      
+               <b-form-radio-group v-model="containsColumnsSelected"
+                          :options="containsColumnsOptions"
+                          name="radioInline">
+              </b-form-radio-group>
+
+            </b-form-group>
+
+
+            <b-form-group horizontal
+                          label="Select options:"
+                          label-class="text-sm-right"
+                          label-for="pre-proc-options">
+  
