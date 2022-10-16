@@ -76,4 +76,25 @@
                           label="Select options:"
                           label-class="text-sm-right"
                           label-for="pre-proc-options">
-  
+              <b-form-select :options="preprocessingOptions" id="pre-proc-options" v-model="preprocessingSelected" :select-size="4"></b-form-select>
+            </b-form-group>
+            
+          </b-form-group>
+
+        <br>
+        <br>
+        <br>
+        <b-button type="primary" @click='handlePreProcess()'> Pre-process Data</b-button>
+      </div>
+      </b-card>
+    </b-container>
+
+    <br>
+    <br>
+
+  </div>
+</template>
+
+<script>
+
+  import sklearnStructuredJSON from './sklearn_stru
