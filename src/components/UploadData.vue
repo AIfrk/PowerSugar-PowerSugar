@@ -97,4 +97,25 @@
 
 <script>
 
-  import sklearnStructuredJSON from './sklearn_stru
+  import sklearnStructuredJSON from './sklearn_structured.json'
+
+  export default{
+
+    mounted() {
+     // feather.replace();
+      this.parseJSONHandler()
+      this.loadNotebook()
+    },
+    data: function()
+    {
+      return {
+      // stores file name
+      uploadedFile: '',
+      uploadFileName:'null',
+      uploadedFileType: 'csv',
+      loadNotebookStatus: false,
+      predefinedSelected: 'BOSTON_HOUSING',
+      // Predefined dataset options
+      preDefinedOptions: [
+        {value: null, text: 'Choose dataset',disabled:true},
+        {value: 'BO
