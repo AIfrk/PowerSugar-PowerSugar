@@ -131,3 +131,20 @@
         ],
         UploadedFileOptions: [
           {value: 'csv', text: 'CSV File(s)'},
+          {value: 'pre-defined', text: 'Choose pre-defined dataset'}
+        ],
+      containsColumnsSelected:'',
+      containsColumnsOptions:[
+      {value: 'yes',text:'yes'},
+      {value: 'no', text:'no'}
+      ],
+      sklearnStructuredJSON,
+      }
+      
+    },
+    methods: {
+      // Called on body load
+      // Checks if notebook exists and populates UI if notebook exists
+      loadNotebook(){
+            
+          this.$http.post('http://loca
