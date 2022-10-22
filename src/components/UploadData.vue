@@ -147,4 +147,16 @@
       // Checks if notebook exists and populates UI if notebook exists
       loadNotebook(){
             
-          this.$http.post('http://loca
+          this.$http.post('http://localhost:5000/load_existing_notebook',JSON.stringify({notebook_name:this.$route.params.notebook_name}), { headers: {  'Content-Type': 'application/json' } }).then((response) => {
+            
+          console.log("Loading notebook",response.data)
+
+          let notebook_data = response.data["notebook_data"]
+
+            if('preprocessing_applied' in notebook_data)
+           {
+            console.log("Loading notebook!")
+
+            if(notebook_data['uploaded_file_type'] == 'csv')
+            {
+       
