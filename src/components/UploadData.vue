@@ -118,4 +118,16 @@
       // Predefined dataset options
       preDefinedOptions: [
         {value: null, text: 'Choose dataset',disabled:true},
-        {value: 'BO
+        {value: 'BOSTON_HOUSING', text: 'BOSTON_HOUSING'},
+        {value: 'MNIST', text: 'MNIST'},
+        {value: 'CIFAR10', text: 'CIFAR10'},
+        {value: 'CIFAR100', text: 'CIFAR100'},
+        {value: 'IRIS', text: 'IRIS'},
+        {value: 'OXFORD17_FLOWERS', text: 'OXFORD17_FLOWERS'}
+        ],
+      preprocessingSelected:'',
+      preprocessingOptions:[
+      {value: null, text: 'Choose pre-processing technique(s)',disabled:true},
+        ],
+        UploadedFileOptions: [
+          {value: 'csv', text: 'CSV File(s)'},
