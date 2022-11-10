@@ -183,4 +183,18 @@
          for(var moduleKey in this.sklearnStructuredJSON['preprocessing'])
          {
           let opt = {value: moduleKey, text: moduleKey}
-          this.preprocessingOptio
+          this.preprocessingOptions.push(opt);
+         }
+      },
+      // Stores file details on file upload
+      handleFileUpload(){
+
+          this.uploadFileName = this.$refs.file.files[0]
+          console.log("Handling file upload:", this.uploadFileName,this.uploadFileName['name'])
+          this.uploadedFile = this.uploadFileName['name']
+          this.loadNotebookStatus = false
+      },
+      // Selects predefined dataset
+      handlePreDefined(){
+
+        this.$http.post('http://localhos
