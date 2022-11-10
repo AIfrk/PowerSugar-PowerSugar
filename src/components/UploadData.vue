@@ -197,4 +197,14 @@
       // Selects predefined dataset
       handlePreDefined(){
 
-        this.$http.post('http://localhos
+        this.$http.post('http://localhost:5000/choose_predefined_dataset',JSON.stringify({dataset_name:this.predefinedSelected}), { headers: {  'Content-Type': 'application/json' } }).then((response) => {
+            
+            console.log("Setting pre-defined dataset",response.data);
+            if(response.data["message"]=="Success"){
+              alert("Dataset chosen!")
+            }
+          })
+      },
+      //Sends pre-processing details to the server - for CSV Files
+      handlePreProcess(){      
+      console.log("notebook name: ",this.$r
