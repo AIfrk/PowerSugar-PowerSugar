@@ -159,4 +159,14 @@
 
             if(notebook_data['uploaded_file_type'] == 'csv')
             {
-       
+            this.uploadedFileType = 'csv'
+            console.log("preprocessing existing: ",notebook_data["preprocessing_applied"])
+            this.loadNotebookStatus = true
+            this.preprocessingSelected = notebook_data["preprocessing_applied"]
+            this.containsColumnsSelected = notebook_data["has_columns"]
+            console.log("Upload file name:",notebook_data["file_name"])
+            this.uploadedFile = notebook_data["file_name"]
+          }
+          else
+          {
+         
