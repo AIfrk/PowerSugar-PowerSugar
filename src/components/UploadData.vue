@@ -169,4 +169,18 @@
           }
           else
           {
-         
+            console.log("Loading pre-defined dataset")
+            this.uploadedFileType = 'pre-defined'
+            this.predefinedSelected = notebook_data["predefined_dataset"]
+           }
+        }
+      })
+
+      },
+      // Used to display preprocessing options after parsing through JSON
+      parseJSONHandler(){
+
+         for(var moduleKey in this.sklearnStructuredJSON['preprocessing'])
+         {
+          let opt = {value: moduleKey, text: moduleKey}
+          this.preprocessingOptio
