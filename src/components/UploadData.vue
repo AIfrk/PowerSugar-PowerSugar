@@ -207,4 +207,14 @@
       },
       //Sends pre-processing details to the server - for CSV Files
       handlePreProcess(){      
-      console.log("notebook name: ",this.$r
+      console.log("notebook name: ",this.$route.params.notebook_name);
+
+      var formData = new FormData();
+      formData.append('file', this.uploadFileName);
+      formData.append('notebook_name',this.$route.params.notebook_name);
+      formData.append('has_header', this.containsColumnsSelected)
+      formData.append('file_name',this.uploadFileName['name']);
+      formData.append('load_notebook_status',this.loadNotebookStatus);
+
+      console.log("Upload table",formData);
+     
