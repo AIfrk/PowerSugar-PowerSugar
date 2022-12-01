@@ -217,4 +217,19 @@
       formData.append('load_notebook_status',this.loadNotebookStatus);
 
       console.log("Upload table",formData);
-     
+      
+      // Upload file
+      if(this.uploadedFileType=='csv')
+      {
+        this.$http.post('http://localhost:5000/upload_table',formData, { headers: {  'Content-Type': 'multipart/form-data' } }).then((response) => {
+            console.log("Upload table:",response.data);
+          })
+       }
+
+      let preprocessHyperparameters;
+
+      // Populating preprocess options after parsing sklearn JSON
+
+      for (var moduleKey in this.sklearnStructuredJSON){
+          for (var classKey in this.sklearnStructuredJSON[moduleKey]){
+              if
