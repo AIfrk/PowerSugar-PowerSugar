@@ -232,4 +232,18 @@
 
       for (var moduleKey in this.sklearnStructuredJSON){
           for (var classKey in this.sklearnStructuredJSON[moduleKey]){
-              if
+              if(classKey==this.preprocessingSelected)
+              {
+                console.log("hyperparameters",this.sklearnStructuredJSON[moduleKey][classKey]);
+                preprocessHyperparameters = this.sklearnStructuredJSON[moduleKey][classKey];
+              }
+          }
+      }
+
+      let model_parameters = {
+          module: 'preprocessing',
+          class: this.preprocessingSelected,
+          hyperparameters: preprocessHyperparameters
+      }
+
+      console.log("contains co
