@@ -246,4 +246,13 @@
           hyperparameters: preprocessHyperparameters
       }
 
-      console.log("contains co
+      console.log("contains columns",this.containsColumnsSelected)
+      
+      let preprocDetails = {notebook_name:this.$route.params.notebook_name,model_parameters:model_parameters,has_columns:this.containsColumnsSelected,uploaded_file_type:'csv'}
+
+      // Object being sent to the server is of the form:
+      // {notebook_name:<name>,model_parameters:{module:'preprocessing',class:<class-key>,hyperparameters:{}}}
+
+      console.log("preprocessing details",preprocDetails)
+
+      this.$http.post('http://localhost:5000
