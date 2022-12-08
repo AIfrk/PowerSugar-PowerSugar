@@ -255,4 +255,24 @@
 
       console.log("preprocessing details",preprocDetails)
 
-      this.$http.post('http://localhost:5000
+      this.$http.post('http://localhost:5000/preprocessing',JSON.stringify(preprocDetails), { headers: { 'Content-Type': 'application/json' } }).then((response) => {
+            console.log("preprocessing",response.data);
+
+            if(response.data["message"]=="Success"){
+              alert("preprocessing applied!")
+            }
+
+          })
+
+      }
+
+    }
+
+  }
+
+</script>
+
+<style>
+
+
+</style>
